@@ -100,7 +100,7 @@ server.registerTool(
 );
 
 const httpServer = createServer(async (req, res) => {
-  if (req.url === "/health") {
+  if (req.url ===  (req.url?.split("?")[0] === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
     res.end(JSON.stringify({ ok: true, app: "MarketPulse AI", version: "0.1.0" }));
     return;
