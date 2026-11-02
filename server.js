@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { randomUUID } from "node:crypto";
 import Parser from "rss-parser";
 import { z } from "zod";
 
@@ -99,21 +100,28 @@ server.registerTool(
   }
 );
 
+const transport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => randomUUID()
+});
+
+await server.connect(transport);
+
 const httpServer = createServer(async (req, res) => {
-  if (req.url === "/health") {
+  if (req.url?.split("?")[0] === "/health") {
     res.writeHead(200, { "content-type": "application/json" });
-    res.end(JSON.stringify({ ok: true, app: "MarketPulse AI", version: "0.1.0" }));
+    res.end(JSON.stringify({
+      ok: true,
+      app: "MarketPulse AI",
+      version: "0.1.0"
+    }));
     return;
   }
-  if (req.url?.startsWith("/mcp")) {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined
-    });
-    res.on("close", () => transport.close());
-    await server.connect(transport);
+
+  if (req.url?.split("?")[0] === "/mcp") {
     await transport.handleRequest(req, res);
     return;
   }
+
   res.writeHead(404);
   res.end("Not found. MCP endpoint: /mcp");
 });
@@ -121,3 +129,4 @@ const httpServer = createServer(async (req, res) => {
 httpServer.listen(PORT, "0.0.0.0", () => {
   console.log(`MarketPulse AI listening on port ${PORT}`);
 });
+
